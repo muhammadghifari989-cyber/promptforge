@@ -1,0 +1,1479 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>PromptForge</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="PromptForge">
+<meta name="theme-color" content="#0b0f14">
+<meta name="description" content="Buat prompt AI yang sempurna dalam hitungan detik">
+
+<!-- Apple Touch Icons -->
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" sizes="512x512" href="icon-512.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0b0f14;
+  --surface: #141b24;
+  --surface-2: #1c2633;
+  --surface-3: #223040;
+  --border: #263546;
+  --border-mid: #2f4158;
+  --border-hi: #3a5170;
+
+  --blue: #3b82f6;
+  --blue-light: #60a5fa;
+  --cyan: #06b6d4;
+  --teal: #14b8a6;
+  --green: #22c55e;
+
+  --grad: linear-gradient(135deg, #3b82f6, #06b6d4);
+  --grad-full: linear-gradient(135deg, #2563eb, #3b82f6, #06b6d4, #14b8a6);
+  --grad-soft: linear-gradient(135deg, #3b82f608, #06b6d408);
+
+  --text-1: #f0f6ff;
+  --text-2: #8daec8;
+  --text-3: #4a6880;
+
+  --err: #f87171;
+  --warn: #fbbf24;
+  --ok: #22c55e;
+
+  --r: 16px;
+  --r-sm: 10px;
+  --r-xs: 6px;
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --t: 0.18s var(--ease);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text-1);
+  min-height: 100vh;
+  overflow-x: hidden;
+  line-height: 1.5;
+}
+
+/* ─── AMBIENT ─── */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse 900px 600px at -10% -5%, #3b82f614 0%, transparent 55%),
+    radial-gradient(ellipse 700px 700px at 110% 90%, #06b6d40a 0%, transparent 55%),
+    radial-gradient(ellipse 500px 400px at 55% 50%, #14b8a605 0%, transparent 55%);
+  pointer-events: none; z-index: 0;
+}
+
+/* ─── LAYOUT ─── */
+.wrap {
+  position: relative; z-index: 1;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 20px 100px;
+}
+
+/* ─── HEADER ─── */
+header {
+  padding: 52px 0 44px;
+  text-align: center;
+}
+
+.header-eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border-mid);
+  border-radius: 99px;
+  padding: 6px 18px;
+  font-size: 11px; font-weight: 700;
+  letter-spacing: .12em; text-transform: uppercase;
+  color: var(--cyan);
+  margin-bottom: 24px;
+}
+.eyebrow-dot {
+  width: 6px; height: 6px;
+  background: var(--grad);
+  border-radius: 50%;
+  animation: blink 2.4s ease-in-out infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+h1 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: clamp(1.9rem, 5vw, 3rem);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -.025em;
+  color: var(--text-1);
+  margin-bottom: 14px;
+}
+
+.h1-serif {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-weight: 400;
+  background: var(--grad-full);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-size: 1.15em;
+  letter-spacing: -.01em;
+}
+
+.subtitle {
+  color: var(--text-2);
+  font-size: .95rem;
+  line-height: 1.7;
+  max-width: 440px;
+  margin: 0 auto;
+  font-weight: 400;
+}
+
+/* ─── STEP WIZARD ─── */
+.wizard {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 0 36px;
+  gap: 0;
+}
+.wz-item {
+  display: flex; align-items: center; gap: 10px;
+  flex: 1; max-width: 200px;
+  position: relative;
+}
+.wz-item + .wz-item::before {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+  margin: 0 -10px;
+  transition: background .4s var(--ease);
+  min-width: 20px;
+}
+.wz-item.done + .wz-item::before,
+.wz-item.active + .wz-item::before {
+  background: var(--grad);
+}
+
+.wz-node {
+  display: flex; flex-direction: column; align-items: center; gap: 7px;
+  flex-shrink: 0;
+}
+.wz-circle {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: .82rem; font-weight: 700;
+  color: var(--text-3);
+  transition: all .25s var(--spring);
+  position: relative;
+}
+.wz-item.active .wz-circle {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #fff;
+  box-shadow: 0 0 0 5px #3b82f620;
+}
+.wz-item.done .wz-circle {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
+}
+.wz-label {
+  font-size: .68rem; font-weight: 600;
+  letter-spacing: .06em; text-transform: uppercase;
+  color: var(--text-3);
+  text-align: center; line-height: 1.25;
+  transition: color .2s;
+  white-space: nowrap;
+}
+.wz-item.active .wz-label { color: var(--blue-light); }
+.wz-item.done .wz-label { color: var(--green); }
+
+/* ─── PROGRESS BAR ─── */
+.prog-bar {
+  height: 2px;
+  background: var(--border);
+  border-radius: 99px;
+  margin-bottom: 28px;
+  overflow: hidden;
+}
+.prog-fill {
+  height: 100%;
+  background: var(--grad);
+  border-radius: 99px;
+  transition: width .5s var(--ease);
+  width: 0%;
+}
+
+/* ─── STEP CARD ─── */
+.step-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  margin-bottom: 16px;
+  overflow: hidden;
+  transition: border-color .2s, box-shadow .2s;
+}
+.step-card.active {
+  border-color: var(--border-hi);
+  box-shadow: 0 0 0 1px #3b82f615, 0 12px 40px #0b0f1480;
+}
+.step-card.done {
+  border-color: #22c55e22;
+  opacity: .85;
+}
+
+.card-head {
+  display: flex; align-items: center; gap: 14px;
+  padding: 20px 22px;
+}
+.card-num {
+  width: 30px; height: 30px; flex-shrink: 0;
+  border-radius: 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: .78rem; font-weight: 700; color: var(--text-3);
+  transition: all .2s;
+}
+.active .card-num { background: #3b82f618; border-color: var(--blue); color: var(--blue-light); }
+.done .card-num { background: #22c55e18; border-color: var(--green); color: var(--green); }
+
+.card-info { flex: 1; }
+.card-title {
+  font-size: .95rem; font-weight: 700;
+  color: var(--text-1);
+  margin-bottom: 2px;
+}
+.card-desc { font-size: .78rem; color: var(--text-2); font-weight: 400; }
+
+.card-pill {
+  font-size: .68rem; font-weight: 700;
+  padding: 4px 12px; border-radius: 99px;
+  letter-spacing: .05em; text-transform: uppercase;
+  flex-shrink: 0;
+}
+.pill-todo { background: var(--surface-2); color: var(--text-3); border: 1px solid var(--border); }
+.pill-now { background: #3b82f618; color: var(--blue-light); border: 1px solid #3b82f635; }
+.pill-done { background: #22c55e18; color: var(--green); border: 1px solid #22c55e30; }
+
+.card-body { padding: 0 22px 22px; display: none; }
+.card-body.open { display: block; }
+
+/* ─── CATEGORY GRID ─── */
+.cat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+@media(max-width:520px){ .cat-grid { grid-template-columns: 1fr; } }
+
+.cat-btn {
+  background: var(--surface-2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 14px 14px;
+  cursor: pointer;
+  text-align: left;
+  display: flex; align-items: flex-start; gap: 12px;
+  transition: all .18s var(--ease);
+  position: relative; overflow: hidden;
+}
+.cat-btn::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: var(--grad-soft);
+  opacity: 0;
+  transition: opacity .2s;
+}
+.cat-btn:hover { border-color: var(--border-hi); transform: translateY(-1px); }
+.cat-btn:hover::after { opacity: 1; }
+.cat-btn.selected {
+  border-color: var(--blue);
+  background: #3b82f610;
+  box-shadow: 0 0 0 1px #3b82f625 inset;
+}
+.cat-btn.selected::after { opacity: 1; }
+
+.cat-icon {
+  font-size: 1.5rem; flex-shrink: 0;
+  width: 40px; height: 40px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--surface-3);
+  border-radius: 10px;
+}
+.cat-text-block { flex: 1; min-width: 0; }
+.cat-name {
+  font-size: .85rem; font-weight: 700;
+  color: var(--text-1);
+  margin-bottom: 3px;
+  line-height: 1.2;
+}
+.cat-hint { font-size: .72rem; color: var(--text-2); line-height: 1.3; }
+
+.selected-check {
+  position: absolute; top: 10px; right: 10px;
+  width: 18px; height: 18px;
+  background: var(--blue);
+  border-radius: 50%;
+  display: none; align-items: center; justify-content: center;
+  font-size: .6rem; color: #fff;
+}
+.cat-btn.selected .selected-check { display: flex; }
+
+/* ─── SETTINGS STEP ─── */
+.settings-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+}
+@media(max-width:520px){ .settings-grid { grid-template-columns: 1fr; } }
+
+.setting-block { display: flex; flex-direction: column; gap: 10px; }
+.block-label {
+  font-size: .78rem; font-weight: 700;
+  color: var(--text-2);
+  letter-spacing: .05em; text-transform: uppercase;
+  display: flex; align-items: center; gap: 7px;
+}
+.block-label-sub {
+  font-size: .72rem; color: var(--text-3); font-weight: 400;
+  text-transform: none; letter-spacing: 0;
+  margin-top: -4px;
+}
+
+/* Language pills */
+.lang-set {
+  display: flex; flex-wrap: wrap; gap: 6px;
+}
+.lang-pill {
+  background: var(--surface-2);
+  border: 1.5px solid var(--border);
+  border-radius: 99px;
+  padding: 5px 14px;
+  font-size: .75rem; font-weight: 600;
+  cursor: pointer; color: var(--text-2);
+  transition: all .15s;
+  display: flex; align-items: center; gap: 5px;
+  white-space: nowrap;
+}
+.lang-pill:hover { border-color: var(--cyan); color: var(--text-1); }
+.lang-pill.selected {
+  border-color: var(--cyan);
+  background: #06b6d415;
+  color: var(--text-1);
+}
+
+/* Select & Input */
+select, input[type=text], input[type=number], textarea {
+  width: 100%;
+  background: var(--surface-2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 11px 14px;
+  color: var(--text-1);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: .875rem;
+  outline: none;
+  transition: all .15s;
+  -webkit-appearance: none; appearance: none;
+}
+select:focus, input:focus, textarea:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px #3b82f620;
+  background: var(--surface-3);
+}
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238daec8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 12px center;
+  padding-right: 36px; cursor: pointer;
+}
+select option { background: var(--surface); }
+textarea { resize: vertical; min-height: 88px; line-height: 1.6; }
+
+input.err, select.err, textarea.err {
+  border-color: var(--err) !important;
+  box-shadow: 0 0 0 3px #f8717118 !important;
+}
+
+/* ─── FIELDS ─── */
+.fields-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px;
+}
+.fields-grid .fg-span2 { grid-column: 1 / -1; }
+@media(max-width:520px){
+  .fields-grid { grid-template-columns: 1fr; }
+  .fields-grid .fg-span2 { grid-column: unset; }
+}
+
+.field-group {
+  display: flex; flex-direction: column; gap: 5px;
+  margin-bottom: 16px;
+}
+.field-group:last-child { margin-bottom: 0; }
+
+.field-label {
+  font-size: .78rem; font-weight: 700;
+  color: var(--text-2);
+  display: flex; align-items: center; gap: 6px;
+}
+.req-star { color: var(--err); }
+.opt-tag { font-size: .68rem; color: var(--text-3); font-weight: 400; }
+.field-hint { font-size: .72rem; color: var(--text-3); line-height: 1.4; margin-top: 1px; }
+.field-err { font-size: .72rem; color: var(--err); display: none; margin-top: 2px; }
+.field-err.show { display: block; }
+
+/* Tooltip */
+.tip {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 15px; height: 15px; border-radius: 50%;
+  background: var(--surface-3); border: 1px solid var(--border);
+  font-size: .6rem; color: var(--text-3);
+  cursor: help; position: relative; font-style: normal;
+}
+.tip::after {
+  content: attr(data-tip);
+  position: absolute; bottom: calc(100% + 7px); left: 50%;
+  transform: translateX(-50%);
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-xs); padding: 8px 12px;
+  font-size: .72rem; color: var(--text-2);
+  white-space: normal; max-width: 220px; width: 200px;
+  line-height: 1.45; z-index: 100;
+  opacity: 0; pointer-events: none;
+  transition: opacity .15s;
+  box-shadow: 0 8px 24px #00000060;
+}
+.tip:hover::after { opacity: 1; }
+
+/* ─── DISCLAIMER ─── */
+.disclaimer {
+  background: #fbbf2410;
+  border: 1px solid #fbbf2430;
+  border-radius: var(--r-sm);
+  padding: 12px 16px;
+  font-size: .78rem;
+  color: var(--warn);
+  line-height: 1.5;
+  margin-top: 18px;
+  display: none;
+}
+.disclaimer.show { display: block; }
+
+/* ─── NAVIGATION BUTTONS ─── */
+.nav-row {
+  display: flex; gap: 10px; margin-top: 22px; flex-wrap: wrap;
+}
+
+.btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 12px 22px;
+  border-radius: var(--r-sm);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: .85rem; font-weight: 700;
+  cursor: pointer; border: none;
+  transition: all .18s var(--ease);
+  position: relative; overflow: hidden;
+  letter-spacing: .01em;
+}
+.btn:active { transform: scale(.97); }
+
+.btn-primary {
+  background: var(--grad);
+  color: #fff;
+  box-shadow: 0 4px 20px #3b82f630;
+}
+.btn-primary:hover { box-shadow: 0 6px 28px #3b82f650; transform: translateY(-1px); }
+
+.btn-generate {
+  background: var(--grad-full);
+  color: #fff;
+  flex: 1; justify-content: center;
+  font-size: .9rem;
+  box-shadow: 0 4px 24px #3b82f640;
+}
+.btn-generate:hover { box-shadow: 0 8px 36px #3b82f660; transform: translateY(-2px); }
+
+.btn-ghost {
+  background: transparent;
+  border: 1.5px solid var(--border);
+  color: var(--text-2);
+}
+.btn-ghost:hover { border-color: var(--border-hi); color: var(--text-1); background: var(--surface-2); }
+.btn svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+/* ─── OUTPUT CARD ─── */
+.output-card {
+  background: var(--surface);
+  border: 1.5px solid #3b82f635;
+  border-radius: var(--r);
+  margin-top: 20px;
+  overflow: hidden;
+  display: none;
+  animation: slideUp .4s var(--spring);
+}
+.output-card.visible { display: block; }
+@keyframes slideUp { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
+
+.out-banner {
+  background: linear-gradient(135deg, #3b82f610, #06b6d410);
+  border-bottom: 1px solid #3b82f625;
+  padding: 16px 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 10px;
+}
+.out-banner-left { display: flex; align-items: center; gap: 10px; }
+.out-banner-title {
+  font-size: .9rem; font-weight: 700; color: var(--text-1);
+}
+.out-chip {
+  background: var(--grad);
+  padding: 3px 11px; border-radius: 99px;
+  font-size: .65rem; font-weight: 800;
+  letter-spacing: .08em; color: #fff;
+  text-transform: uppercase;
+}
+.out-actions { display: flex; gap: 8px; align-items: center; }
+.char-count {
+  font-size: .72rem; color: var(--text-3);
+  font-family: 'JetBrains Mono', monospace;
+}
+.btn-sm {
+  padding: 7px 14px;
+  font-size: .75rem;
+  border-radius: var(--r-xs);
+  border: 1.5px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-2);
+  cursor: pointer;
+  font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700;
+  display: flex; align-items: center; gap: 5px;
+  transition: all .15s;
+}
+.btn-sm:hover { border-color: var(--border-hi); color: var(--text-1); }
+.btn-sm.copied { border-color: var(--ok); color: var(--ok); background: #22c55e12; }
+.btn-sm svg { width: 13px; height: 13px; }
+
+.out-meta-tags {
+  display: flex; flex-wrap: wrap; gap: 6px;
+  padding: 12px 20px 0;
+}
+.meta-tag {
+  background: #06b6d412; border: 1px solid #06b6d428;
+  border-radius: 99px; padding: 3px 12px;
+  font-size: .7rem; font-weight: 600; color: var(--cyan);
+}
+
+.out-body { padding: 16px 20px 20px; }
+.out-textarea {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: .8rem; line-height: 1.8;
+  color: var(--text-1);
+  white-space: pre-wrap; word-break: break-word;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 18px;
+  min-height: 100px; width: 100%;
+  resize: none; outline: none;
+  transition: border-color .15s, box-shadow .15s;
+  -webkit-appearance: none; appearance: none;
+}
+.out-textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 3px #3b82f618; }
+
+.out-meta-footer {
+  display: flex; flex-wrap: wrap; gap: 10px;
+  margin-top: 10px; padding: 10px 14px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  font-size: .7rem; color: var(--text-3);
+  font-family: 'JetBrains Mono', monospace;
+}
+.out-tips {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  margin-top: 14px;
+}
+.tip-chip {
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 99px; padding: 4px 12px;
+  font-size: .71rem; color: var(--text-3);
+  display: flex; align-items: center; gap: 5px;
+}
+
+/* ─── HISTORY ─── */
+.history-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  margin-top: 16px; overflow: hidden;
+}
+.history-head {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.history-title {
+  font-size: .82rem; font-weight: 700;
+  color: var(--text-2);
+  display: flex; align-items: center; gap: 8px;
+}
+.hist-count {
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 99px; padding: 2px 9px;
+  font-size: .66rem; color: var(--text-3);
+  font-family: 'JetBrains Mono', monospace;
+}
+.history-body { padding: 10px; }
+.hist-list {
+  display: flex; flex-direction: column; gap: 6px;
+  max-height: 280px; overflow-y: auto; padding-right: 4px;
+}
+.hist-list::-webkit-scrollbar { width: 3px; }
+.hist-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.hist-item {
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: var(--r-sm); padding: 11px 14px;
+  cursor: pointer; display: flex; align-items: flex-start; gap: 10px;
+  transition: all .15s;
+}
+.hist-item:hover { border-color: var(--border-hi); background: var(--surface-3); }
+.h-icon { font-size: .95rem; flex-shrink: 0; margin-top: 2px; }
+.h-body { flex: 1; min-width: 0; }
+.h-meta { display: flex; gap: 8px; align-items: center; margin-bottom: 3px; }
+.h-cat { font-size: .66rem; font-weight: 800; color: var(--cyan); text-transform: uppercase; letter-spacing: .07em; }
+.h-lang { font-size: .64rem; color: var(--text-3); }
+.h-prev { font-size: .75rem; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.h-time { font-size: .64rem; color: var(--text-3); font-family: 'JetBrains Mono', monospace; flex-shrink: 0; }
+
+.empty-state {
+  text-align: center; padding: 30px;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  color: var(--text-3); font-size: .8rem;
+}
+.empty-icon { font-size: 1.6rem; opacity: .3; }
+
+/* ─── TOAST ─── */
+.toast {
+  position: fixed; bottom: 22px; right: 22px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-sm); padding: 12px 18px;
+  font-size: .82rem; font-weight: 600;
+  display: flex; align-items: center; gap: 8px;
+  z-index: 9999;
+  transform: translateY(18px); opacity: 0;
+  transition: all .3s var(--spring);
+  pointer-events: none;
+  box-shadow: 0 8px 32px #00000070;
+  max-width: 300px;
+}
+.toast.show { opacity: 1; transform: translateY(0); }
+.toast.ok { border-color: var(--ok); color: var(--ok); }
+.toast.err { border-color: var(--err); color: var(--err); }
+.toast.warn { border-color: var(--warn); color: var(--warn); }
+
+/* ─── LOADING DOTS ─── */
+.dots { display: inline-flex; gap: 3px; align-items: center; }
+.dots span {
+  width: 5px; height: 5px; background: #fff; border-radius: 50%;
+  animation: bop 1s infinite;
+}
+.dots span:nth-child(2) { animation-delay: .15s; }
+.dots span:nth-child(3) { animation-delay: .3s; }
+@keyframes bop { 0%,100%{transform:translateY(0);opacity:.5} 50%{transform:translateY(-5px);opacity:1} }
+
+/* ─── ANIMATIONS ─── */
+.fadein { animation: fadein .4s ease both; }
+@keyframes fadein { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+.d1 { animation-delay: .06s; }
+.d2 { animation-delay: .12s; }
+.d3 { animation-delay: .18s; }
+
+@media(max-width:600px){
+  .wrap { padding: 0 14px 70px; }
+  header { padding: 36px 0 28px; }
+  .wizard { gap: 0; }
+  .wz-label { font-size: .6rem; }
+  .toast { right: 10px; bottom: 10px; left: 10px; max-width: unset; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- HEADER -->
+<header class="fadein">
+  <div class="header-eyebrow"><span class="eyebrow-dot"></span> AI Prompt Generator</div>
+  <h1>Buat Prompt AI<br><span class="h1-serif">dalam 3 langkah</span></h1>
+  <p class="subtitle">Pilih kategori, atur preferensi, isi detail — prompt siap pakai langsung terbuat.</p>
+</header>
+
+<!-- STEP WIZARD -->
+<div class="wizard fadein d1" id="wizard">
+  <div class="wz-item active" id="wi1">
+    <div class="wz-node">
+      <div class="wz-circle">1</div>
+      <div class="wz-label">Kategori</div>
+    </div>
+  </div>
+  <div class="wz-item" id="wi2">
+    <div class="wz-node">
+      <div class="wz-circle">2</div>
+      <div class="wz-label">Bahasa &<br>Platform</div>
+    </div>
+  </div>
+  <div class="wz-item" id="wi3">
+    <div class="wz-node">
+      <div class="wz-circle">3</div>
+      <div class="wz-label">Detail</div>
+    </div>
+  </div>
+</div>
+
+<!-- PROGRESS -->
+<div class="prog-bar fadein d1">
+  <div class="prog-fill" id="progFill"></div>
+</div>
+
+<!-- STEP 1 -->
+<div class="step-card active fadein d2" id="card1">
+  <div class="card-head">
+    <div class="card-num">1</div>
+    <div class="card-info">
+      <div class="card-title">Pilih Kategori Prompt</div>
+      <div class="card-desc">Mau buat prompt untuk apa?</div>
+    </div>
+    <span class="card-pill pill-now" id="pill1">Sekarang</span>
+  </div>
+  <div class="card-body open" id="body1">
+    <div class="cat-grid" id="catGrid"></div>
+    <div class="nav-row">
+      <button class="btn btn-primary" onclick="goStep2()">
+        Lanjut
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- STEP 2 -->
+<div class="step-card fadein d2" id="card2">
+  <div class="card-head">
+    <div class="card-num">2</div>
+    <div class="card-info">
+      <div class="card-title">Bahasa & Platform</div>
+      <div class="card-desc">Bahasa output dan tools AI tujuan</div>
+    </div>
+    <span class="card-pill pill-todo" id="pill2">Berikutnya</span>
+  </div>
+  <div class="card-body" id="body2">
+    <div class="settings-grid">
+      <div class="setting-block">
+        <div class="block-label">🌐 Bahasa Output</div>
+        <div class="block-label-sub">Prompt ditulis dalam bahasa ini</div>
+        <div class="lang-set" id="langPills"></div>
+      </div>
+      <div class="setting-block">
+        <div class="block-label">🤖 Target Platform</div>
+        <div class="block-label-sub">Prompt dioptimasi untuk tools ini</div>
+        <select id="platformSel">
+          <option value="universal">🌍 Universal (semua platform)</option>
+          <option value="chatgpt">💬 ChatGPT / GPT-4o</option>
+          <option value="claude">🧠 Claude (Anthropic)</option>
+          <option value="midjourney">🎨 Midjourney</option>
+          <option value="dalle">🖼️ DALL·E 3</option>
+          <option value="stable">⚙️ Stable Diffusion</option>
+          <option value="gemini">✨ Google Gemini</option>
+        </select>
+        <div class="field-hint" style="margin-top:4px">Setiap platform punya gaya prompt berbeda — otomatis disesuaikan</div>
+      </div>
+    </div>
+    <div class="nav-row">
+      <button class="btn btn-ghost" onclick="goStep(1)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+        Kembali
+      </button>
+      <button class="btn btn-primary" onclick="goStep3()">
+        Lanjut
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- STEP 3 -->
+<div class="step-card fadein d3" id="card3">
+  <div class="card-head">
+    <div class="card-num">3</div>
+    <div class="card-info">
+      <div class="card-title" id="step3Title">Isi Detail</div>
+      <div class="card-desc">Semakin detail diisi, semakin bagus hasilnya</div>
+    </div>
+    <span class="card-pill pill-todo" id="pill3">Terakhir</span>
+  </div>
+  <div class="card-body" id="body3">
+    <div id="fieldsContainer"></div>
+    <div class="disclaimer" id="disclaimerBox">
+      ⚠️ <strong>Disclaimer Hukum:</strong> Informasi ini bersifat edukatif dan BUKAN nasihat hukum profesional. Selalu konsultasikan dengan pengacara berlisensi untuk keputusan hukum Anda.
+    </div>
+    <div class="nav-row">
+      <button class="btn btn-ghost" onclick="goStep(2)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+        Kembali
+      </button>
+      <button class="btn btn-generate" id="genBtn" onclick="generate()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        Generate Prompt
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- OUTPUT -->
+<div class="output-card" id="outputCard">
+  <div class="out-banner">
+    <div class="out-banner-left">
+      <div class="out-banner-title">✅ Prompt siap digunakan!</div>
+      <span class="out-chip" id="outputChip">HASIL</span>
+    </div>
+    <div class="out-actions">
+      <span class="char-count" id="charCount">0 karakter</span>
+      <button class="btn-sm" id="copyBtn" onclick="copyPrompt()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Salin
+      </button>
+      <button class="btn-sm" onclick="resetAll()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+        Buat Baru
+      </button>
+    </div>
+  </div>
+  <div class="out-meta-tags" id="outputMetaHeader" style="display:none"></div>
+  <div class="out-body">
+    <textarea class="out-textarea" id="outputBox" spellcheck="false" readonly></textarea>
+    <div class="out-meta-footer" id="outputMetaFooter" style="display:none"></div>
+    <div class="out-tips">
+      <span class="tip-chip">💡 Edit prompt sesuai kebutuhan sebelum dipakai</span>
+      <span class="tip-chip">📋 Salin & tempel ke ChatGPT / Claude / Midjourney</span>
+    </div>
+  </div>
+</div>
+
+<!-- HISTORY -->
+<div class="history-card" id="historyCard" style="display:none">
+  <div class="history-head">
+    <div class="history-title">
+      🕐 Riwayat sesi ini
+      <span class="hist-count" id="histCount">0</span>
+    </div>
+    <button class="btn-sm" onclick="clearHistory()" style="padding:5px 10px;font-size:.7rem">Hapus Semua</button>
+  </div>
+  <div class="history-body">
+    <div class="hist-list" id="histList"></div>
+  </div>
+</div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════
+const CATS = [
+  {
+    id:'design', icon:'🎨', name:'Desain & Gambar',
+    hint:'Midjourney, DALL·E, Stable Diffusion',
+    fields:[
+      {id:'subject',label:'Subjek Utama',type:'text',placeholder:'contoh: seorang astronot di hutan bambu',tip:'Gambarkan objek atau karakter utama yang ingin kamu visualisasikan',req:true},
+      {id:'style',label:'Gaya Seni',type:'select',options:['Realistis','Digital Art','Watercolor','Oil Painting','Anime / Manga','Concept Art','Minimalis','Cyberpunk','Fantasy','Impressionist','Pixel Art','3D Render','Sketch / Line Art'],tip:'Gaya menentukan "rasa" visual keseluruhan gambar',req:true},
+      {id:'mood',label:'Suasana / Mood',type:'select',options:['Dreamy & Ethereal','Dramatic & Epic','Peaceful & Calm','Dark & Moody','Vibrant & Energetic','Melancholic','Heroic','Cozy & Warm','Mysterious','Joyful & Playful'],tip:'Mood mempengaruhi emosi yang ditangkap gambar',req:true},
+      {id:'color',label:'Palet Warna Dominan',type:'text',placeholder:'contoh: biru teal, emas, hitam pekat',tip:'Sebutkan 2-3 warna utama untuk menjaga konsistensi visual',req:true},
+      {id:'lighting',label:'Jenis Pencahayaan',type:'select',options:['Golden Hour (senja hangat)','Cinematic (dramatis)','Studio Light (bersih)','Neon Lights (colorful)','Moonlight (malam)','Rim Light (outline terang)','Natural Soft (lembut)','High Contrast (keras)','Bokeh (blur indah)','Backlit (siluet)'],req:true,tip:'Pencahayaan mengubah drastis tampilan dan nuansa gambar'},
+      {id:'aspect',label:'Rasio Aspek',type:'select',options:['16:9 (landscape/video)','1:1 (kotak/Instagram)','9:16 (portrait/story)','4:3 (klasik)','3:2 (foto)','21:9 (ultrawide)'],req:true,tip:'Pilih rasio sesuai platform tujuan'},
+      {id:'extra',label:'Detail Tambahan',type:'textarea',placeholder:'Misalnya: latar belakang, pose, elemen dekoratif, efek khusus...',req:false,tip:'Semakin banyak detail, semakin presisi hasil gambarnya',span2:true}
+    ]
+  },
+  {
+    id:'recipe', icon:'🍽️', name:'Resep & Kuliner',
+    hint:'Resep detail, teknik memasak, variasi diet',
+    fields:[
+      {id:'ingredient',label:'Bahan Utama',type:'text',placeholder:'contoh: dada ayam, brokoli, jamur shiitake',tip:'Sebutkan bahan-bahan yang sudah kamu punya atau ingin digunakan',req:true},
+      {id:'cuisine',label:'Jenis Masakan',type:'select',options:['Masakan Indonesia','Masakan Jepang','Masakan Italia','Masakan Thailand','Masakan Perancis','Masakan India','Masakan Korea','Masakan Meksiko','Masakan Timur Tengah','Fusion / Perpaduan'],req:true,tip:'Jenis masakan menentukan teknik, rempah, dan cita rasa yang digunakan'},
+      {id:'servings',label:'Jumlah Porsi',type:'select',options:['1 porsi (untuk sendiri)','2 porsi (berdua)','4 porsi (keluarga kecil)','6 porsi','10+ porsi (acara/hajatan)'],req:true,tip:'Takaran bahan akan disesuaikan otomatis'},
+      {id:'diet',label:'Pantangan / Diet',type:'select',options:['Tidak ada pantangan','Vegetarian (tanpa daging)','Vegan (tanpa produk hewani)','Bebas Gluten','Bebas Laktosa (susu)','Halal','Rendah Kalori / Diet','Keto / Low Carb'],req:true,tip:'Pastikan resep aman dan sesuai kebutuhanmu'},
+      {id:'difficulty',label:'Tingkat Kesulitan',type:'select',options:['Mudah (cocok untuk pemula)','Sedang (perlu sedikit pengalaman)','Sulit (level chef profesional)'],req:true,tip:'Pilih sesuai kemampuan memasakmu'},
+      {id:'cooktime',label:'Batas Waktu Memasak',type:'select',options:['15 menit (super cepat)','30 menit','1 jam','2 jam','Bebas (tidak dibatasi waktu)'],req:true,tip:'Waktu termasuk persiapan dan pemasakan'},
+      {id:'notes',label:'Catatan Khusus',type:'textarea',placeholder:'contoh: tidak suka pedas, tidak punya oven, ingin rasa seperti restoran tertentu...',req:false,tip:'Informasi tambahan untuk membuat resep lebih personal',span2:true}
+    ]
+  },
+  {
+    id:'data', icon:'📊', name:'Analisis Data & Bisnis',
+    hint:'Laporan, insight, strategi berbasis data',
+    fields:[
+      {id:'datatype',label:'Data / Topik yang Dianalisis',type:'text',placeholder:'contoh: data penjualan Q3 2024, laporan konversi website',tip:'Sebutkan data atau topik spesifik yang ingin dianalisis',req:true},
+      {id:'goal',label:'Tujuan Analisis',type:'select',options:['Identifikasi Tren','Forecasting / Prediksi','Komparasi Performa','Root Cause Analysis','Segmentasi Pelanggan','Rekomendasi Strategis','Dashboard Summary','Risk Assessment'],req:true,tip:'Tujuan menentukan pendekatan dan kedalaman analisis'},
+      {id:'audience',label:'Untuk Siapa Laporan Ini?',type:'select',options:['Direktur / CEO / C-Level','Tim Manajemen Menengah','Tim Teknis / Data','Investor / Stakeholder','Klien Eksternal','Tim Sales & Marketing'],req:true,tip:'Bahasa dan level teknis laporan akan disesuaikan'},
+      {id:'format',label:'Format Output',type:'select',options:['Narasi Eksekutif (ringkas)','Bullet Points (to the point)','Tabel Perbandingan','SWOT Analysis','Insight & Rekomendasi','Laporan Lengkap','Presentasi Slide'],req:true,tip:'Pilih format yang paling mudah dikomunikasikan'},
+      {id:'context',label:'Konteks Bisnis',type:'textarea',placeholder:'Jelaskan industri, skala perusahaan, dan permasalahan utama yang sedang dihadapi...',req:true,tip:'Konteks membantu AI memberikan insight yang relevan',span2:true}
+    ]
+  },
+  {
+    id:'writing', icon:'✍️', name:'Penulisan & Copywriting',
+    hint:'Artikel, caption, email, landing page, dll',
+    fields:[
+      {id:'contenttype',label:'Jenis Konten',type:'select',options:['Artikel Blog','Artikel SEO','Email Newsletter','Caption Media Sosial (Instagram/TikTok)','Iklan (Ad Copy)','Landing Page','Press Release / Siaran Pers','White Paper / E-book','Script / Naskah Video','Thread Twitter/X'],req:true,tip:'Setiap jenis konten punya struktur dan gaya yang berbeda'},
+      {id:'topic',label:'Topik / Produk / Layanan',type:'text',placeholder:'contoh: aplikasi manajemen keuangan untuk freelancer',tip:'Semakin spesifik topik, semakin relevan isi kontennya',req:true},
+      {id:'tone',label:'Nada Tulisan',type:'select',options:['Profesional & Formal','Santai & Conversational','Inspiratif & Motivasional','Persuasif & Sales-y','Informatif & Edukatif','Lucu & Relatable','Emosional & Storytelling','Authoritative & Expert'],req:true,tip:'Nada harus konsisten dengan brand dan target audiens'},
+      {id:'audience',label:'Target Audiens',type:'text',placeholder:'contoh: ibu rumah tangga 25-40 tahun yang aktif di Instagram',tip:'Semakin spesifik audiens, semakin tepat sasaran kontennya',req:true},
+      {id:'length',label:'Panjang Konten',type:'select',options:['Pendek (di bawah 300 kata / 3 paragraf)','Sedang (500–800 kata)','Panjang (1.000–2.000 kata)','Sangat Panjang (2.000+ kata / komprehensif)'],req:true,tip:'Sesuaikan dengan platform dan tujuan konten'},
+      {id:'cta',label:'Call-to-Action (CTA)',type:'text',placeholder:'contoh: Coba gratis 14 hari, Kunjungi website kami',tip:'Apa tindakan yang kamu harapkan dari pembaca?',req:false},
+      {id:'extra',label:'Informasi Tambahan',type:'textarea',placeholder:'Kata kunci SEO, referensi kompetitor, elemen penting yang harus ada...',req:false,tip:'Detail tambahan untuk memperkaya konten',span2:true}
+    ]
+  },
+  {
+    id:'code', icon:'💻', name:'Kode & Teknologi',
+    hint:'Debugging, fitur, review kode, arsitektur',
+    fields:[
+      {id:'lang',label:'Bahasa / Framework',type:'text',placeholder:'contoh: Python 3.11, React 18, Laravel 10',tip:'Sebutkan bahasa pemrograman atau framework yang digunakan',req:true},
+      {id:'task',label:'Jenis Task',type:'select',options:['Membuat Fungsi / Method Baru','Debugging & Perbaikan Error','Code Review & Optimasi','Desain Arsitektur Sistem','Membuat Unit Test','Migrasi / Refactoring Kode','Integrasi API Eksternal','Dokumentasi Kode','Membuat Komponen UI','Membuat Query Database'],req:true,tip:'Spesifikasi task membantu AI memahami konteks lebih baik'},
+      {id:'desc',label:'Deskripsi Lengkap',type:'textarea',placeholder:'Jelaskan secara detail apa yang ingin kamu capai. Sertakan konteks, constraint, dan ekspektasi output...',req:true,tip:'Detail yang baik = solusi yang tepat sasaran',span2:true},
+      {id:'snippet',label:'Kode yang Ada (jika ada)',type:'textarea',placeholder:'Tempel kode yang relevan di sini...',req:false,tip:'Kode yang ada membantu AI memberikan solusi yang kompatibel',span2:true}
+    ]
+  },
+  {
+    id:'marketing', icon:'📣', name:'Marketing & Iklan',
+    hint:'Kampanye, copywriting iklan, strategi konten',
+    fields:[
+      {id:'product',label:'Produk / Layanan / Brand',type:'text',placeholder:'contoh: skincare lokal untuk kulit berminyak, Gen Z',tip:'Deskripsikan apa yang sedang kamu pasarkan',req:true},
+      {id:'goal',label:'Tujuan Kampanye',type:'select',options:['Brand Awareness','Lead Generation','Direct Sales / Konversi','Retensi Pelanggan (Retention)','Peluncuran Produk Baru','Re-engagement Pelanggan Lama','Promosi Event / Webinar'],req:true,tip:'Tujuan yang jelas = strategi yang lebih fokus'},
+      {id:'channel',label:'Channel / Platform',type:'select',options:['Instagram','TikTok','Google Ads','Facebook / Meta Ads','LinkedIn','YouTube','Email Marketing','WhatsApp Marketing','Marketplace (Tokopedia/Shopee)'],req:true,tip:'Setiap platform punya format dan best practice berbeda'},
+      {id:'budget',label:'Anggaran Kampanye',type:'select',options:['Bootstrap (di bawah 1 juta)','Kecil (1–5 juta)','Menengah (5–20 juta)','Besar (20–100 juta)','Enterprise (100 juta+)','Organik (tanpa budget iklan)'],req:true,tip:'Anggaran mempengaruhi strategi dan channel yang direkomendasikan'},
+      {id:'audience',label:'Target Audiens',type:'text',placeholder:'contoh: pria 25-35 tahun, professional, tertarik investasi',tip:'Semakin detail persona audiens, semakin tepat pesan yang dibuat',req:true},
+      {id:'usp',label:'Keunggulan Produk (USP)',type:'textarea',placeholder:'Apa yang membuat produk/layanan kamu berbeda dan lebih baik dari kompetitor?',req:false,tip:'USP yang kuat jadi fondasi pesan yang persuasif',span2:true}
+    ]
+  },
+  {
+    id:'health', icon:'💪', name:'Kesehatan & Gaya Hidup',
+    hint:'Program latihan, nutrisi, kesehatan mental',
+    fields:[
+      {id:'topic',label:'Topik Kesehatan',type:'select',options:['Program Olahraga / Fitness','Rencana Nutrisi / Diet','Kesehatan Mental & Mindfulness','Manajemen Berat Badan','Pemulihan Pasca Cedera','Sleep Optimization','Manajemen Stres','Kesehatan Hormon & Metabolisme'],req:true,tip:'Pilih area kesehatan yang paling relevan dengan kebutuhanmu'},
+      {id:'goal',label:'Target / Tujuan',type:'text',placeholder:'contoh: turun 5kg dalam 2 bulan, lari 5K pertama',tip:'Tujuan yang SMART membantu membuat program yang realistis',req:true},
+      {id:'profile',label:'Profil Singkat',type:'text',placeholder:'contoh: wanita 28 tahun, berat 65kg, tinggi 160cm, pemula',tip:'Profil memastikan rekomendasi sesuai kondisi fisikmu',req:true},
+      {id:'duration',label:'Durasi Program',type:'select',options:['1 minggu (kickstart)','2 minggu','1 bulan','3 bulan','6 bulan','Program berkelanjutan'],req:true,tip:'Durasi mempengaruhi intensitas dan progres yang diharapkan'},
+      {id:'restriction',label:'Kondisi / Batasan Khusus',type:'textarea',placeholder:'Cedera, alergi, kondisi medis, keterbatasan alat, waktu tersedia, dll...',req:false,tip:'Jangan sembunyikan kondisi medis — ini untuk keamananmu',span2:true}
+    ]
+  },
+  {
+    id:'legal', icon:'⚖️', name:'Hukum & Legalitas',
+    hint:'Informasi umum hukum (bukan nasihat hukum profesional)',
+    fields:[
+      {id:'legaltype',label:'Jenis Masalah / Topik Hukum',type:'select',options:['Kontrak & Perjanjian Bisnis','Hak Kekayaan Intelektual (HKI)','Ketenagakerjaan & Hubungan Kerja','Pendirian & Legalitas Perusahaan','Sengketa Perdata','Hak Konsumen & Perlindungan','Privasi Data (UU PDP Indonesia)','Perizinan Usaha (NIB, dll)','Hukum Keluarga (informasi umum)'],req:true,tip:'Pilih kategori yang paling mendekati situasimu'},
+      {id:'jurisdiction',label:'Yurisdiksi Hukum',type:'select',options:['Indonesia (hukum nasional)','Internasional (umum)','Amerika Serikat','Uni Eropa','Singapura'],req:true,tip:'Hukum berbeda di setiap negara — pastikan pilih yang tepat'},
+      {id:'situation',label:'Situasi / Pertanyaan Kamu',type:'textarea',placeholder:'Jelaskan situasi atau pertanyaanmu secara umum. Jangan cantumkan nama, nomor KTP, atau data sensitif lainnya...',req:true,tip:'Fokus pada situasi umum, bukan detail pribadi',span2:true},
+      {id:'purpose',label:'Tujuan Bertanya',type:'select',options:['Memahami konsep hukum secara umum','Mempersiapkan pertanyaan untuk pengacara','Riset awal sebelum mengambil keputusan','Membuat draft dokumen awal (tetap perlu review pengacara)'],req:true,tip:'Tujuan membantu AI memberikan informasi yang paling relevan'}
+    ],
+    disclaimer:true
+  },
+  {
+    id:'creative', icon:'🌟', name:'Kreatif & Fiksi',
+    hint:'Cerpen, novel, puisi, worldbuilding, karakter',
+    fields:[
+      {id:'genre',label:'Genre Cerita',type:'select',options:['Fantasy (dunia sihir)','Sci-Fi (fiksi ilmiah)','Romance (percintaan)','Thriller (menegangkan)','Horror (horor)','Slice of Life (kehidupan sehari-hari)','Historical Fiction (fiksi sejarah)','Mystery (misteri)','Adventure (petualangan)','Drama Realis','Magical Realism'],req:true,tip:'Genre menentukan elemen, tone, dan ekspektasi pembaca'},
+      {id:'format',label:'Format Karya',type:'select',options:['Cerpen (di bawah 1.000 kata)','Novelet (1.000–3.000 kata)','Satu Chapter Novel','Flash Fiction (di bawah 500 kata)','Puisi Naratif','Script / Skenario','Dokumen Worldbuilding','Profil Karakter Detail'],req:true,tip:'Format menentukan panjang dan struktur tulisan'},
+      {id:'premise',label:'Premis / Ide Cerita',type:'textarea',placeholder:'Ceritakan premis utama: siapa karakternya, apa konfliknya, dan kira-kira ke mana ceritanya mengarah...',req:true,tip:'Premis yang kuat adalah fondasi cerita yang bagus',span2:true},
+      {id:'setting',label:'Latar / Setting',type:'text',placeholder:'contoh: kota Jakarta futuristik tahun 2087, desa terpencil abad ke-16',tip:'Latar waktu dan tempat mempengaruhi atmosfer cerita',req:true},
+      {id:'tone',label:'Nada Cerita',type:'select',options:['Ringan & Menyenangkan','Gelap & Berat','Penuh Harapan & Hangat','Melankolis & Sunyi','Epik & Heroik','Philosophical & Reflektif','Komedi & Satir','Thriller & Menegangkan'],req:true,tip:'Nada adalah "perasaan" keseluruhan yang ditinggalkan cerita'},
+      {id:'pov',label:'Sudut Pandang Narasi',type:'select',options:['Orang Pertama — "Aku" (intim)','Orang Ketiga Terbatas — "Dia" (fokus satu karakter)','Orang Ketiga Mahatahu — "Dia" (tahu segalanya)','Orang Kedua — "Kamu" (unik & langka)'],req:true,tip:'Sudut pandang mempengaruhi kedekatan pembaca dengan karakter'}
+    ]
+  }
+];
+
+const LANGS = [
+  {id:'id',flag:'🇮🇩',name:'Indonesia'},
+  {id:'en',flag:'🇺🇸',name:'English'},
+  {id:'ja',flag:'🇯🇵',name:'日本語'},
+  {id:'ar',flag:'🇸🇦',name:'العربية'},
+  {id:'es',flag:'🇪🇸',name:'Español'},
+  {id:'fr',flag:'🇫🇷',name:'Français'},
+  {id:'de',flag:'🇩🇪',name:'Deutsch'},
+  {id:'zh',flag:'🇨🇳',name:'中文'},
+];
+
+const LANG_INSTR = {
+  id:'Tulis seluruh prompt berikut dalam Bahasa Indonesia yang natural dan profesional.',
+  en:'Write the entire following prompt in clear, professional English.',
+  ja:'以下のプロンプト全体を、自然で流暢な日本語で書いてください。',
+  ar:'اكتب المطالبة التالية بالكامل باللغة العربية الفصحى الواضحة.',
+  es:'Escribe el siguiente prompt completo en español claro y profesional.',
+  fr:"Rédigez l'intégralité du prompt suivant en français clair et professionnel.",
+  de:'Schreibe den folgenden Prompt vollständig in klarem, professionellem Deutsch.',
+  zh:'用清晰、专业的中文书写以下完整提示。'
+};
+const LANG_NAMES = {id:'Bahasa Indonesia',en:'English',ja:'日本語',ar:'العربية',es:'Español',fr:'Français',de:'Deutsch',zh:'中文'};
+
+// ── STATE ──
+let currentStep = 1, selectedCat = null, selectedLang = 'id', promptHistory = [];
+
+// ── INIT ──
+function init() {
+  const g = document.getElementById('catGrid');
+  g.innerHTML = CATS.map(c => `
+    <button class="cat-btn" data-id="${c.id}" onclick="selectCat('${c.id}')">
+      <div class="cat-icon">${c.icon}</div>
+      <div class="cat-text-block">
+        <div class="cat-name">${c.name}</div>
+        <div class="cat-hint">${c.hint}</div>
+      </div>
+      <div class="selected-check">✓</div>
+    </button>`).join('');
+
+  const lp = document.getElementById('langPills');
+  lp.innerHTML = LANGS.map(l => `
+    <button class="lang-pill ${l.id==='id'?'selected':''}" data-id="${l.id}" onclick="selectLang('${l.id}')">
+      ${l.flag} ${l.name}
+    </button>`).join('');
+
+  updateProgress();
+}
+
+function selectCat(id) {
+  selectedCat = id;
+  document.querySelectorAll('.cat-btn').forEach(c => c.classList.toggle('selected', c.dataset.id === id));
+}
+
+function selectLang(id) {
+  selectedLang = id;
+  document.querySelectorAll('.lang-pill').forEach(p => p.classList.toggle('selected', p.dataset.id === id));
+}
+
+// ── STEP NAV ──
+function goStep(n) {
+  currentStep = n;
+  [1,2,3].forEach(i => {
+    const card = document.getElementById('card'+i);
+    const body = document.getElementById('body'+i);
+    const pill = document.getElementById('pill'+i);
+    const wi = document.getElementById('wi'+i);
+
+    if (i < n) {
+      card.className = 'step-card done';
+      body.className = 'card-body';
+      pill.className = 'card-pill pill-done';
+      pill.textContent = '✓ Selesai';
+      wi.className = 'wz-item done';
+      wi.querySelector('.wz-circle').textContent = '✓';
+    } else if (i === n) {
+      card.className = 'step-card active';
+      body.className = 'card-body open';
+      pill.className = 'card-pill pill-now';
+      pill.textContent = 'Sekarang';
+      wi.className = 'wz-item active';
+      wi.querySelector('.wz-circle').textContent = i;
+    } else {
+      card.className = 'step-card';
+      body.className = 'card-body';
+      pill.className = 'card-pill pill-todo';
+      pill.textContent = i===2?'Berikutnya':'Terakhir';
+      wi.className = 'wz-item';
+      wi.querySelector('.wz-circle').textContent = i;
+    }
+  });
+  updateProgress();
+  document.getElementById('card'+n).scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function goStep2() {
+  if (!selectedCat) { showToast('⚠️ Pilih satu kategori dulu ya!','warn'); return; }
+  goStep(2);
+}
+
+function goStep3() {
+  renderFields();
+  goStep(3);
+  const cat = CATS.find(c=>c.id===selectedCat);
+  document.getElementById('step3Title').textContent = `${cat.icon} Detail — ${cat.name}`;
+  document.getElementById('disclaimerBox').classList.toggle('show', !!cat.disclaimer);
+}
+
+function updateProgress() {
+  const pct = {1:10,2:42,3:72}[currentStep] || 10;
+  document.getElementById('progFill').style.width = pct+'%';
+}
+
+// ── RENDER FIELDS ──
+function renderFields() {
+  const cat = CATS.find(c=>c.id===selectedCat);
+  const container = document.getElementById('fieldsContainer');
+  container.innerHTML = `<div class="fields-grid">${cat.fields.map(f => renderField(f)).join('')}</div>`;
+}
+
+function renderField(f) {
+  const req = f.req !== false;
+  const span = f.span2 ? ' fg-span2' : '';
+  const star = req ? '<span class="req-star">*</span>' : '<span class="opt-tag">(opsional)</span>';
+  const tip = f.tip ? `<span class="tip" data-tip="${f.tip}">?</span>` : '';
+  let input = '';
+  if (f.type === 'text' || f.type === 'number') {
+    input = `<input type="${f.type}" id="f_${f.id}" placeholder="${f.placeholder||''}" oninput="clearErr('${f.id}')">`;
+  } else if (f.type === 'select') {
+    const opts = f.options.map(o=>`<option value="${o}">${o}</option>`).join('');
+    input = `<select id="f_${f.id}" onchange="clearErr('${f.id}')"><option value="">— Pilih —</option>${opts}</select>`;
+  } else if (f.type === 'textarea') {
+    input = `<textarea id="f_${f.id}" placeholder="${f.placeholder||''}" oninput="clearErr('${f.id}')"></textarea>`;
+  }
+  return `
+    <div class="field-group${span}">
+      <label class="field-label">${f.label} ${star} ${tip}</label>
+      ${f.tip ? `<div class="field-hint">${f.tip}</div>` : ''}
+      ${input}
+      <span class="field-err" id="ferr_${f.id}">Wajib diisi sebelum generate</span>
+    </div>`;
+}
+
+function clearErr(id) {
+  const el = document.getElementById('f_'+id);
+  const er = document.getElementById('ferr_'+id);
+  if(el) el.classList.remove('err');
+  if(er) er.classList.remove('show');
+}
+
+// ── VALIDATE ──
+function validate() {
+  const cat = CATS.find(c=>c.id===selectedCat);
+  let ok = true;
+  cat.fields.forEach(f => {
+    if (f.req === false) return;
+    const el = document.getElementById('f_'+f.id);
+    if (!el) return;
+    if (!el.value.trim()) {
+      el.classList.add('err');
+      const er = document.getElementById('ferr_'+f.id);
+      if(er) er.classList.add('show');
+      ok = false;
+    }
+  });
+  if(!ok) showToast('❌ Lengkapi semua field yang bertanda bintang (*)','err');
+  return ok;
+}
+
+// ── GET VALS ──
+function getVals() {
+  const v = {};
+  const cat = CATS.find(c=>c.id===selectedCat);
+  cat.fields.forEach(f => {
+    const el = document.getElementById('f_'+f.id);
+    if(el) v[f.id] = el.value.trim();
+  });
+  return v;
+}
+
+// ── PLATFORM HEADER ──
+function getPlatformHeader(platform) {
+  const headers = {
+    chatgpt: 'Prompt dioptimasi untuk ChatGPT / GPT-4o. Gunakan format percakapan natural dan berikan konteks yang jelas.',
+    claude: 'Prompt dioptimasi untuk Claude (Anthropic). Berikan instruksi terstruktur dengan section yang jelas dan detail yang eksplisit.',
+    midjourney: 'Prompt dioptimasi untuk Midjourney. Format: [subjek], [gaya], [pencahayaan], [kamera], [artis referensi] --ar [rasio] --v 6',
+    dalle: 'Prompt dioptimasi untuk DALL·E 3. Deskripsikan gambar secara natural, detail, dan spesifik. Hindari kata-kata yang dilarang.',
+    stable: 'Prompt dioptimasi untuk Stable Diffusion. Gunakan tag kata kunci dengan koma, sertakan negative prompt dan parameter teknis.',
+    gemini: 'Prompt dioptimasi untuk Google Gemini. Manfaatkan kemampuan multimodal dan pemahaman konteks panjangnya.'
+  };
+  return headers[platform] || '';
+}
+
+// ── BUILD PROMPT ──
+function buildPrompt(cat, v) {
+  const lang = LANG_INSTR[selectedLang];
+  const platform = document.getElementById('platformSel').value;
+  const platHeader = getPlatformHeader(platform);
+
+  let p = '';
+  if(platHeader) p += `[INSTRUKSI PLATFORM]\n${platHeader}\n\n`;
+  p += `[INSTRUKSI BAHASA]\n${lang}\n\n---\n\n`;
+
+  switch(cat) {
+    case 'design': {
+      p += `Kamu adalah prompt engineer ahli untuk image generation AI. Buat prompt gambar yang detail dan artistik untuk:\n\n`;
+      p += `🎨 SUBJEK: ${v.subject}\n`;
+      p += `🖌️ GAYA: ${v.style}\n`;
+      p += `🌊 MOOD: ${v.mood}\n`;
+      p += `🎨 WARNA: ${v.color}\n`;
+      p += `💡 PENCAHAYAAN: ${v.lighting}\n`;
+      p += `📐 RASIO: ${v.aspect}\n`;
+      if(v.extra) p += `✨ DETAIL TAMBAHAN: ${v.extra}\n`;
+      p += `\nBuat prompt yang:\n• Sangat deskriptif dan visual — gunakan bahasa yang "bisa dilihat"\n• Sertakan referensi gaya artistik spesifik (nama seniman, era seni, atau medium)\n• Optimalkan untuk kualitas maksimal dengan parameter teknis yang tepat\n• Jika untuk Midjourney, sertakan negative prompt dan parameter (--ar, --v, --style, --q)\n• Jika untuk SD, buat positive prompt dan negative prompt secara terpisah`;
+      break;
+    }
+    case 'recipe': {
+      p += `Kamu adalah chef profesional dengan keahlian luas di berbagai masakan dunia. Buat resep lengkap:\n\n`;
+      p += `🥘 BAHAN UTAMA: ${v.ingredient}\n`;
+      p += `🍜 JENIS MASAKAN: ${v.cuisine}\n`;
+      p += `👨‍👩‍👧 PORSI: ${v.servings}\n`;
+      p += `🌿 DIET/PANTANGAN: ${v.diet}\n`;
+      p += `⚡ KESULITAN: ${v.difficulty}\n`;
+      p += `⏱️ WAKTU: ${v.cooktime}\n`;
+      if(v.notes) p += `📝 CATATAN KHUSUS: ${v.notes}\n`;
+      p += `\nResep harus mencakup:\n• Daftar bahan lengkap dengan takaran presisi (gram/ml/sendok)\n• Langkah memasak step-by-step yang jelas dan mudah diikuti\n• Tips pro dari chef untuk hasil terbaik\n• Variasi dan substitusi bahan jika ada\n• Cara penyajian dan plating yang menarik\n• Info nutrisi perkiraan per porsi`;
+      break;
+    }
+    case 'data': {
+      p += `Kamu adalah senior data analyst dan business consultant berpengalaman. Lakukan analisis mendalam:\n\n`;
+      p += `📊 DATA/TOPIK: ${v.datatype}\n`;
+      p += `🎯 TUJUAN: ${v.goal}\n`;
+      p += `👥 AUDIENS: ${v.audience}\n`;
+      p += `📋 FORMAT: ${v.format}\n`;
+      p += `🏢 KONTEKS BISNIS:\n${v.context}\n`;
+      p += `\nPanduan analisis:\n• Identifikasi insight yang actionable, bukan hanya deskriptif\n• Sertakan visualisasi data yang direkomendasikan (jenis chart yang tepat)\n• Berikan rekomendasi konkret dengan prioritas implementasi\n• Highlight risiko dan asumsi yang mendasari analisis\n• Sesuaikan bahasa dan level teknis untuk ${v.audience}`;
+      break;
+    }
+    case 'writing': {
+      p += `Kamu adalah copywriter dan content strategist profesional. Buat konten berikut:\n\n`;
+      p += `📝 JENIS KONTEN: ${v.contenttype}\n`;
+      p += `💡 TOPIK: ${v.topic}\n`;
+      p += `🎭 NADA: ${v.tone}\n`;
+      p += `👤 TARGET AUDIENS: ${v.audience}\n`;
+      p += `📏 PANJANG: ${v.length}\n`;
+      if(v.cta) p += `🎯 CTA: ${v.cta}\n`;
+      if(v.extra) p += `📌 INFO TAMBAHAN: ${v.extra}\n`;
+      p += `\nPanduan penulisan:\n• Buka dengan hook yang langsung menarik perhatian audiens target\n• Gunakan struktur yang logis dan mudah di-scan\n• Terapkan prinsip persuasi yang relevan (social proof, scarcity, authority)\n• Setiap paragraf harus punya satu tujuan yang jelas\n• Tutup dengan CTA yang kuat dan spesifik`;
+      break;
+    }
+    case 'code': {
+      p += `Kamu adalah senior software engineer dengan keahlian mendalam di ${v.lang}. Bantu saya dengan task berikut:\n\n`;
+      p += `💻 BAHASA/FRAMEWORK: ${v.lang}\n`;
+      p += `🔧 JENIS TASK: ${v.task}\n`;
+      p += `📋 DESKRIPSI LENGKAP:\n${v.desc}\n`;
+      if(v.snippet) p += `\n📎 KODE YANG ADA:\n\`\`\`\n${v.snippet}\n\`\`\`\n`;
+      p += `\nPanduan respons:\n• Jelaskan pendekatan dan alasan di balik solusi yang kamu berikan\n• Tulis kode yang clean, readable, dan mengikuti best practice ${v.lang}\n• Sertakan komentar pada bagian yang kompleks\n• Identifikasi potential edge case dan cara menghandlenya\n• Berikan contoh penggunaan / test case jika relevan\n• Sebutkan dependency atau library eksternal yang dibutuhkan`;
+      break;
+    }
+    case 'marketing': {
+      p += `Kamu adalah chief marketing officer berpengalaman dengan track record kampanye sukses. Buat strategi:\n\n`;
+      p += `🏷️ PRODUK/BRAND: ${v.product}\n`;
+      p += `🎯 TUJUAN KAMPANYE: ${v.goal}\n`;
+      p += `📱 CHANNEL: ${v.channel}\n`;
+      p += `💰 ANGGARAN: ${v.budget}\n`;
+      p += `👥 TARGET AUDIENS: ${v.audience}\n`;
+      if(v.usp) p += `⭐ USP: ${v.usp}\n`;
+      p += `\nDeliver:\n• Strategi kampanye komprehensif dan terukur\n• 5 variasi copywriting (headline + body text berbeda)\n• Persona target audiens yang detail\n• KPI dan metrik yang harus dipantau\n• Arah kreatif visual (mood, warna, gaya)\n• Timeline dan roadmap eksekusi\n• Tips optimasi berbasis data untuk ${v.channel}`;
+      break;
+    }
+    case 'health': {
+      p += `Kamu adalah health coach dan nutritionist bersertifikat internasional. Buat panduan:\n\n`;
+      p += `💪 TOPIK: ${v.topic}\n`;
+      p += `🎯 TUJUAN: ${v.goal}\n`;
+      p += `👤 PROFIL: ${v.profile}\n`;
+      p += `📅 DURASI: ${v.duration}\n`;
+      if(v.restriction) p += `⚠️ KONDISI/BATASAN: ${v.restriction}\n`;
+      p += `\nPanduan program:\n• Rancang program yang realistis dan berkelanjutan jangka panjang\n• Sertakan jadwal mingguan yang terstruktur\n• Berikan alternatif untuk situasi berbeda (bepergian, sangat sibuk, dll)\n• Sertakan tips motivasi dan cara mengatasi plateau\n• Tambahkan warning signs yang perlu diperhatikan\n\n⚠️ DISCLAIMER: Informasi ini untuk tujuan edukasi umum. Konsultasikan dengan dokter atau tenaga kesehatan profesional sebelum memulai program baru.`;
+      break;
+    }
+    case 'legal': {
+      p += `Kamu adalah asisten riset hukum yang membantu memberikan informasi umum edukatif:\n\n`;
+      p += `⚖️ TOPIK HUKUM: ${v.legaltype}\n`;
+      p += `🌏 YURISDIKSI: ${v.jurisdiction}\n`;
+      p += `📋 SITUASI:\n${v.situation}\n`;
+      p += `🎯 TUJUAN: ${v.purpose}\n\n`;
+      p += `Panduan respons:\n• Jelaskan prinsip hukum umum yang relevan dengan situasi ini\n• Identifikasi dokumen atau langkah yang biasanya diperlukan\n• Sebutkan faktor-faktor yang dapat mempengaruhi hasilnya\n• Berikan daftar pertanyaan yang sebaiknya ditanyakan kepada pengacara\n• Rekomendasikan jenis profesional hukum yang tepat untuk kasus ini\n\n⚠️ DISCLAIMER WAJIB: Informasi ini bersifat edukatif dan BUKAN nasihat hukum profesional. Tidak ada hubungan klien-pengacara yang terbentuk. Untuk keputusan hukum apapun, selalu konsultasikan dengan pengacara berlisensi yang relevan.`;
+      break;
+    }
+    case 'creative': {
+      p += `Kamu adalah penulis kreatif berbakat dengan suara unik dan teknik storytelling tinggi. Ciptakan:\n\n`;
+      p += `🌟 GENRE: ${v.genre}\n`;
+      p += `📖 FORMAT: ${v.format}\n`;
+      p += `🌍 SETTING: ${v.setting}\n`;
+      p += `🎭 NADA: ${v.tone}\n`;
+      p += `👁️ SUDUT PANDANG: ${v.pov}\n`;
+      p += `📜 PREMIS:\n${v.premise}\n\n`;
+      p += `Panduan penulisan:\n• Buka dengan kalimat atau adegan yang langsung menghook pembaca\n• Bangun karakter tiga dimensi dengan motivasi yang believable dan kompleks\n• Terapkan "show don't tell" — tunjukkan emosi melalui aksi, dialog, dan detail sensoris\n• Jaga tension dan pacing yang sesuai untuk genre ${v.genre}\n• Pastikan konsistensi internal dunia dan logika cerita\n• Akhiri dengan resolusi yang satisfying namun tidak klise`;
+      break;
+    }
+  }
+  return p;
+}
+
+// ── GENERATE ──
+function generate() {
+  if(!validate()) return;
+  const btn = document.getElementById('genBtn');
+  btn.innerHTML = `<div class="dots"><span></span><span></span><span></span></div> Membuat prompt...`;
+  btn.disabled = true;
+
+  setTimeout(() => {
+    const v = getVals();
+    const prompt = buildPrompt(selectedCat, v);
+    const cat = CATS.find(c=>c.id===selectedCat);
+    const platform = document.getElementById('platformSel').value;
+    const platHeader = getPlatformHeader(platform);
+    const platText = document.getElementById('platformSel').options[document.getElementById('platformSel').selectedIndex].text;
+    const now = new Date().toLocaleString('id-ID');
+
+    const outputBox = document.getElementById('outputBox');
+    outputBox.value = prompt;
+    document.getElementById('charCount').textContent = prompt.length + ' karakter';
+    document.getElementById('outputChip').textContent = cat.name.toUpperCase();
+
+    const headerBar = document.getElementById('outputMetaHeader');
+    headerBar.innerHTML = '';
+    if(platHeader) headerBar.innerHTML += `<span class="meta-tag">🤖 ${platText}</span>`;
+    headerBar.innerHTML += `<span class="meta-tag">🌐 ${LANG_NAMES[selectedLang]}</span>`;
+    headerBar.style.display = 'flex';
+
+    document.getElementById('outputMetaFooter').innerHTML =
+      `<span>📅 ${now}</span><span>📂 ${cat.name}</span><span>🤖 ${platText}</span>`;
+    document.getElementById('outputMetaFooter').style.display = 'flex';
+
+    const oc = document.getElementById('outputCard');
+    oc.classList.add('visible');
+    outputBox.style.height = 'auto';
+    outputBox.style.height = outputBox.scrollHeight + 'px';
+
+    document.getElementById('progFill').style.width = '100%';
+
+    addHistory(prompt, cat);
+
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Generate Prompt`;
+    btn.disabled = false;
+
+    oc.scrollIntoView({behavior:'smooth',block:'start'});
+    showToast('✅ Prompt berhasil dibuat!','ok');
+  }, 700);
+}
+
+// ── COPY ──
+function copyPrompt() {
+  const ta = document.getElementById('outputBox');
+  const text = ta.value;
+  if(!text) return;
+
+  const setBtnCopied = () => {
+    const btn = document.getElementById('copyBtn');
+    btn.classList.add('copied');
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Tersalin!`;
+    showToast('📋 Prompt disalin ke clipboard!','ok');
+    setTimeout(()=>{
+      btn.classList.remove('copied');
+      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Salin`;
+    },2000);
+  };
+
+  if(navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(setBtnCopied).catch(fallback);
+  } else { fallback(); }
+
+  function fallback() {
+    try {
+      ta.removeAttribute('readonly');
+      ta.select(); ta.setSelectionRange(0, 99999);
+      const ok = document.execCommand('copy');
+      ta.setAttribute('readonly','');
+      if(ok) setBtnCopied();
+      else showToast('❌ Gagal. Tekan & tahan teks lalu pilih Salin.','err');
+    } catch(e) {
+      ta.setAttribute('readonly','');
+      showToast('❌ Gagal. Tekan & tahan teks lalu pilih Salin.','err');
+    }
+  }
+}
+
+// ── RESET ──
+function resetAll() {
+  selectedCat=null; currentStep=1;
+  document.querySelectorAll('.cat-btn').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('outputCard').classList.remove('visible');
+  document.getElementById('outputMetaHeader').style.display='none';
+  document.getElementById('outputMetaFooter').style.display='none';
+  document.getElementById('progFill').style.width='0%';
+  goStep(1);
+  showToast('🔄 Siap buat prompt baru!','ok');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ── HISTORY ──
+function addHistory(prompt, cat) {
+  const entry = { id:Date.now(), icon:cat.icon, name:cat.name, lang:LANG_NAMES[selectedLang], prompt,
+    time:new Date().toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}) };
+  promptHistory.unshift(entry);
+  if(promptHistory.length>10) promptHistory.pop();
+  renderHistory();
+  document.getElementById('historyCard').style.display='block';
+}
+
+function renderHistory() {
+  document.getElementById('histCount').textContent = promptHistory.length;
+  const list = document.getElementById('histList');
+  if(!promptHistory.length){
+    list.innerHTML=`<div class="empty-state"><div class="empty-icon">📋</div><span>Belum ada riwayat</span></div>`;
+    return;
+  }
+  list.innerHTML = promptHistory.map(h=>`
+    <div class="hist-item" onclick="loadHistory(${h.id})">
+      <div class="h-icon">${h.icon}</div>
+      <div class="h-body">
+        <div class="h-meta"><span class="h-cat">${h.name}</span><span class="h-lang">${h.lang}</span></div>
+        <div class="h-prev">${h.prompt.replace(/\n/g,' ').substring(0,80)}...</div>
+      </div>
+      <div class="h-time">${h.time}</div>
+    </div>`).join('');
+}
+
+function loadHistory(id) {
+  const h = promptHistory.find(x=>x.id===id);
+  if(!h) return;
+  const outputBox = document.getElementById('outputBox');
+  outputBox.value = h.prompt;
+  document.getElementById('charCount').textContent = h.prompt.length+' karakter';
+  document.getElementById('outputChip').textContent = h.name.toUpperCase();
+  document.getElementById('outputMetaHeader').style.display = 'none';
+  document.getElementById('outputMetaFooter').style.display = 'none';
+  document.getElementById('outputCard').classList.add('visible');
+  outputBox.style.height = 'auto';
+  outputBox.style.height = outputBox.scrollHeight + 'px';
+  document.getElementById('outputCard').scrollIntoView({behavior:'smooth',block:'start'});
+  showToast(`📂 Memuat: ${h.name}`,'ok');
+}
+
+function clearHistory() {
+  promptHistory=[];
+  document.getElementById('historyCard').style.display='none';
+  showToast('🗑️ Riwayat dihapus','ok');
+}
+
+// ── TOAST ──
+function showToast(msg, type='ok') {
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.className=`toast ${type} show`;
+  clearTimeout(t._t);
+  t._t=setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+init();
+
+// ── SERVICE WORKER REGISTRATION ──
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js')
+      .then(reg => console.log('SW registered:', reg.scope))
+      .catch(err => console.log('SW failed:', err));
+  });
+}
+</script>
+</body>
+</html>
